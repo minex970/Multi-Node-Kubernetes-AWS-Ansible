@@ -1,1 +1,74 @@
+---
+# tasks file for k8s_slave
 
+# Installing docker and iproute-tc
+- name: Installing Docker & iproute-tc
+  package:
+    name:
+    - docker
+    - iproute-tc
+    state: present
+  changed_when: false
+
+- name: "Starting Docker"
+  service: 
+    name: docker
+    state:  started
+
+- name: "enabling docker"
+  shell: "systemctl enable docker --now"
+  changed_when: false
+
+- name: Add kubeadm repositories on Master Node
+  yum_repository:
+    name: kube
+    description: Kubernetes repo
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch
+    enabled: 1
+    gpgcheck: 1
+    gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+
+- name: "Installing KubeAdm, kubectl and kubelet"
+  shell: "yum install -y  kubeadm   --disableexcludes=kubernetes"
+  register: kubeadm
+  changed_when: false
+- debug:
+    var: kubeadm.stdout_lines
+
+
+- name: "Enabling kubelet"
+  shell: "systemctl enable kubelet  --now"
+  changed_when: false
+
+- name: "Pulling Images using KubeAdm"
+  shell: "kubeadm config  images pull"
+  changed_when: false
+
+- name: "Creating daemon.json file inside /etc/docker"
+  shell: | 
+      cat <<EOF | sudo tee  /etc/docker/daemon.json
+      {
+      "exec-opts": ["native.cgroupdriver=systemd"]
+      }
+      EOF
+  changed_when: false
+
+- name: "Re-starting Docker"
+  service:
+     name: docker
+     state:  restarted
+
+- name: "Setting bridge-nf-call-iptables to 1"
+  shell: | 
+       echo "1"  > /proc/sys/net/bridge/bridge-nf-call-iptables
+  changed_when: false
+
+- name: Joining the master node
+  command: "{{ hostvars[groups['ec2_master'][0]]['token']['stdout'] }}"
+  register: join
+- debug:
+    var: join.stdout_lines
+
+- name: Cleaning Caches on RAM
+  shell: echo 3 > /proc/sys/vm/drop_caches
