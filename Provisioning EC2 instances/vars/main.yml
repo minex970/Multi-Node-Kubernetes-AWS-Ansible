@@ -1,0 +1,17 @@
+---
+# vars file for ec2
+python_pkgs:
+- "boto3"
+- "boto"
+
+sg_name: "SecurityGroupForKubernetes"
+region_name: ap-south-1
+keypair: ansible-aws
+instance_type: t2.micro
+ami_id: ami-079b5e5b3971bd10d
+subnet_name: subnet-85730dc9
+
+instance_tag:
+- "master"
+- "worker1"
+- "worker2"
