@@ -1,0 +1,22 @@
+# On localhost
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+        - cred.yml
+  tasks:
+  - name: Running EC2 Role
+    role: ec2
+
+# For master node
+- hosts: ec2_master
+  gather_facts: no
+  tasks:
+  - name: Running K8s Master Role
+    role: k8s_master
+
+# For slave node
+- hosts: ec2_slave
+  gather_facts: no
+  tasks:
+  - name: Running K8s Slave Role
+    role: k8s_slave
